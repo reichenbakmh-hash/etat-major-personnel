@@ -251,7 +251,7 @@ async function bootstrap(request: Request, env: Env) {
   const body = await readBody(request);
   const accessCode = string(body.accessCode);
   if (!timingSafeEqual(accessCode.trim(), env.ACCESS_CODE.trim())) {
-    return unauthorized('Code d\'accès invalide.');
+    return unauthorized("Code d'accès invalide.");
   }
 
   const existingUsers = await countRows(env.DB, 'users');
