@@ -229,7 +229,7 @@ async function bootstrap(request: Request, env: Env) {
   const body = await readBody(request);
   const accessCode = string(body.accessCode);
   if (!timingSafeEqual(accessCode.trim(), env.ACCESS_CODE.trim())) {
-    return unauthorized('Code d’accès invalide.');
+    return unauthorized('Code d'accès invalide.');
   }
 
   const existingUsers = await countRows(env.DB, 'users');
@@ -314,7 +314,7 @@ async function login(request: Request, env: Env) {
   const body = await readBody(request);
   const accessCode = string(body.accessCode);
   if (!timingSafeEqual(accessCode.trim(), env.ACCESS_CODE.trim())) {
-    return unauthorized('Code d’accès invalide.');
+    return unauthorized('Code d'accès invalide.');
   }
 
   const email = string(body.email).toLowerCase().trim();
@@ -699,73 +699,231 @@ async function analyzeDecision(request: Request, env: Env, session: SessionData)
   if (!context) riskNotes.push('Contexte insuffisant');
 
   function buildDoctrines(
-  input: {
-    risk: number;
-    feasibility: number;
-    dependencies: number;
-    flexibility: number;
-    resilience: number;
-    time: number;
-  },
-  missingData: string[]
-) {
-  const notes: DoctrineNote[] = [];
+    input: {
+      risk: number;
+      feasibility: number;
+      dependencies: number;
+      flexibility: number;
+      resilience: number;
+      time: number;
+    },
+    missingData: string[]
+  ) {
+    const notes: DoctrineNote[] = [];
 
-  if (input.risk >= 60) {
-    notes.push({
-      doctrine: 'Sun Tzu',
-      note: 'Éviter la bataille inutile. Préférer la manœuvre, la désescalade ou l’isolement des points de friction.'
-    });
+    if (input.risk >= 60) {
+      notes.push({
+        doctrine: 'Sun Tzu',
+        note: 'Éviter la bataille inutile. Préférer la manœuvre, la désescalade ou l'isolement des points de friction.'
+      });
+    }
+
+    if (input.dependencies >= 50) {
+      notes.push({
+        doctrine: 'Clausewitz',
+        note: 'Attention à la friction. Chaque dépendance externe augmente l'incertitude réelle du plan.'
+      });
+    }
+
+    if (input.feasibility >= 60 && input.risk < 55) {
+      notes.push({
+        doctrine: 'Napoléon',
+        note: 'Concentrer les forces sur le point décisif pour obtenir un effet supérieur à l'effort.'
+      });
+    }
+
+    if (input.time >= 60 && input.feasibility >= 50) {
+      notes.push({
+        doctrine: 'César',
+        note: 'La vitesse peut compenser une partie des faiblesses si l'exécution reste nette et contrôlée.'
+      });
+    }
+
+    if (input.flexibility >= 60) {
+      notes.push({
+        doctrine: 'Rommel',
+        note: 'La mobilité et l'adaptation rapide offrent un avantage si la ligne d'action reste légère.'
+      });
+    }
+
+    if (input.resilience >= 60) {
+      notes.push({
+        doctrine: 'Gracián',
+        note: 'La prudence renforce la position. Préserver les options avant de chercher l'éclat.'
+      });
+    }
+
+    if (missingData.length > 0) {
+      notes.push({
+        doctrine: 'Le Bon',
+        note: 'Les perceptions changent vite quand l'information est incomplète. Rester attentif aux réactions collectives.'
+      });
+    }
+
+    return notes.length
+      ? notes
+      : [
+          {
+            doctrine: 'Machiavel',
+            note: 'Lecture froide : conserver l'avantage, réduire les angles morts et protéger l'intérêt principal.'
+          }
+        ];
   }
 
-  if (input.dependencies >= 50) {
-    notes.push({
-      doctrine: 'Clausewitz',
-      note: 'Attention à la friction. Chaque dépendance externe augmente l’incertitude réelle du plan.'
-    });
-  }
+  const doctrines = buildDoctrines(input, missingData);
 
-  if (input.feasibility >= 60 && input.risk < 55) {
-    notes.push({
-      doctrine: 'Napoléon',
-      note: 'Concentrer les forces sur le point décisif pour obtenir un effet supérieur à l’effort.'
-    });
-  }
+  return json({
+    score,
+    confidence,
+    completeness,
+    input,
+    riskNotes,
+    doctrines
+  });
+}
 
-  if (input.time >= 60 && input.feasibility >= 50) {
-    notes.push({
-      doctrine: 'César',
-      note: 'La vitesse peut compenser une partie des faiblesses si l’exécution reste nette et contrôlée.'
-    });
+function ensureSecrets(env: Env) {
+  if (!env.ACCESS_CODE || !env.AUTH_SECRET) {
+    throw new Error('Variables secrètes manquantes.');
   }
+}
 
-  if (input.flexibility >= 60) {
-    notes.push({
-      doctrine: 'Rommel',
-      note: 'La mobilité et l’adaptation rapide offrent un avantage si la ligne d’action reste légère.'
-    });
-  }
+function unauthorized(message = 'Non autorisé.') {
+  return json({ error: message }, 401);
+}
 
-  if (input.resilience >= 60) {
-    notes.push({
-      doctrine: 'Gracián',
-      note: 'La prudence renforce la position. Préserver les options avant de chercher l’éclat.'
-    });
-  }
+function badRequest(message: string) {
+  return json({ error: message }, 400);
+}
 
-  if (missingData.length > 0) {
-    notes.push({
-      doctrine: 'Le Bon',
-      note: 'Les perceptions changent vite quand l’information est incomplète. Rester attentif aux réactions collectives.'
-    });
-  }
+function notFound(message = 'Introuvable.') {
+  return json({ error: message }, 404);
+}
 
-  return notes.length
-    ? notes
-    : [
-        {
-          doctrine: 'Machiavel',
-          note: 'Lecture froide : conserver l’avantage, réduire les angles morts et protéger l’intérêt principal.'
-        }
-      ];
+function json(data: unknown, status = 200, headers: Record<string, string> = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      ...headers
+    }
+  });
+}
+
+function base64UrlEncode(value: string) {
+  return base64UrlEncodeBytes(enc.encode(value));
+}
+
+function base64UrlEncodeBytes(bytes: Uint8Array) {
+  return btoa(String.fromCharCode(...bytes))
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
+}
+
+function atobUrl(input: string) {
+  const normalized = input.replaceAll('-', '+').replaceAll('_', '/');
+  const pad = normalized.length % 4;
+  const padded = normalized + (pad ? '='.repeat(4 - pad) : '');
+  return atob(padded);
+}
+
+function safeJsonObject(value: string | null) {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
   }
+}
+
+function safeJsonArray(value: string | null) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function splitTags(value: string) {
+  return value
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function string(value: unknown) {
+  return typeof value === 'string' ? value : value == null ? '' : String(value);
+}
+
+function optionalString(value: unknown) {
+  const s = string(value).trim();
+  return s.length ? s : null;
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function label(kind: EntityKind) {
+  switch (kind) {
+    case 'missions':
+      return 'Mission';
+    case 'projects':
+      return 'Projet';
+    case 'campaigns':
+      return 'Campagne';
+    case 'objectives':
+      return 'Objectif';
+    case 'tasks':
+      return 'Tâche';
+    case 'resources':
+      return 'Ressource';
+    case 'decisions':
+      return 'Décision';
+    case 'scenarios':
+      return 'Scénario';
+  }
+}
+
+function isEntityKind(value: string): value is EntityKind {
+  return (ENTITY_KINDS as string[]).includes(value);
+}
+
+function clampInt(value: unknown, min: number, max: number, fallback: number) {
+  const n = Number.parseInt(String(value), 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function clampFloat(value: unknown, fallback: number, min: number, max: number) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function round(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+function timingSafeEqual(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let out = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    out |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return out === 0;
+}
+
+function randomHex(size: number) {
+  const bytes = new Uint8Array(size);
+  crypto.getRandomValues(bytes);
+  return bytesToHex(bytes);
+}
+
+function bytesToHex(bytes: Uint8Array) {
+  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
