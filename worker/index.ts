@@ -251,7 +251,7 @@ async function bootstrap(request: Request, env: Env) {
   const body = await readBody(request);
   const accessCode = string(body.accessCode);
   if (!timingSafeEqual(accessCode.trim(), env.ACCESS_CODE.trim())) {
-    return unauthorized("Code d'accès invalide.");
+    return unauthorized('Code d\'accès invalide.');
   }
 
   const existingUsers = await countRows(env.DB, 'users');
@@ -336,7 +336,7 @@ async function login(request: Request, env: Env) {
   const body = await readBody(request);
   const accessCode = string(body.accessCode);
   if (!timingSafeEqual(accessCode.trim(), env.ACCESS_CODE.trim())) {
-    return unauthorized("Code d'accès invalide.");
+    return unauthorized('Code d\'accès invalide.');
   }
 
   const email = string(body.email).toLowerCase().trim();
@@ -736,7 +736,7 @@ async function analyzeDecision(request: Request, env: Env, session: SessionData)
     if (input.risk >= 60) {
       notes.push({
         doctrine: 'Sun Tzu',
-        note: 'Éviter la bataille inutile. Préférer la manœuvre, la désescalade ou l\'isolement des points de friction.'
+        note: 'Éviter la bataille inutile. Préférer la manoeuvre, la désescalade ou l\'isolement des points de friction.'
       });
     }
 
