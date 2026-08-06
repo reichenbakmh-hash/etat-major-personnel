@@ -1,0 +1,7 @@
+<svg width="192" height="192" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="État-Major Personnel">
+  <rect width="512" height="512" rx="120" fill="#0f172a"/>
+  <rect x="84" y="84" width="344" height="344" rx="92" fill="#111c33" stroke="#334155" stroke-width="12"/>
+  <circle cx="256" cy="256" r="132" fill="#0b1324" stroke="#22c55e" stroke-width="12"/>
+  <path d="M256 126L286 214L374 256L286 298L256 386L226 298L138 256L226 214L256 126Z" fill="#38bdf8"/>
+  <text x="256" y="282" text-anchor="middle" font-size="88" font-family="Arial, Helvetica, sans-serif" font-weight="700" fill="#e5eefc">EM</text>
+</svg>
