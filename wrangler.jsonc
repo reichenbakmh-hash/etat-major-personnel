@@ -11,7 +11,7 @@
     {
       "binding": "DB",
       "database_name": "etat-major-personnel",
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+      "database_id": "098174d8-2e85-4e1f-a81a"
     }
   ],
   "vars": {
