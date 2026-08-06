@@ -717,7 +717,7 @@ function App() {
     }
   }
 
-  async function runAnalysis(event: React.FormEvent) {
+    async function runAnalysis(event: React.FormEvent) {
     event.preventDefault();
     if (!session) return;
     const payload = {
@@ -744,4 +744,287 @@ function App() {
       });
       setAnalysisResult(result);
       setActiveTab('ia');
-      set
+      setBanner({ kind: 'success', text: 'Rapport stratégique généré.' });
+      await loadSection('dashboard', true);
+    } catch (error) {
+      setBanner({
+        kind: 'error',
+        text: error instanceof Error ? error.message : 'Analyse impossible.'
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((item) => {
+      const haystack = [
+        item.title,
+        item.description,
+        item.status,
+        item.horizon,
+        item.tags.join(' '),
+        item.parentType ?? '',
+        item.parentId ?? ''
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [items, search]);
+
+  if (initializing) {
+    return (
+      <div className="auth-shell">
+        <div className="panel auth-card">
+          <p className="eyebrow">Azhell Zettour</p>
+          <h1>État-Major Personnel</h1>
+          <p>Vérification du poste de commandement…</p>
+          <div className="loader-row">
+            <span className="loader" />
+            <span>Synchronisation du théâtre d’opérations</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <AuthGate
+        boot={bootstrap}
+        form={authForm}
+        onFieldChange={updateAuthField}
+        onSubmit={handleAuthSubmit}
+        busy={busy}
+        banner={banner}
+      />
+    );
+  }
+
+  return (
+    <div className="shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="brand-mark">EM</div>
+          <div>
+            <p className="eyebrow">Azhell Zettour</p>
+            <h1>État-Major</h1>
+          </div>
+        </div>
+
+        <div className="workspace-card">
+          <span className="badge info">Poste actif</span>
+          <h2>{session.workspace.title}</h2>
+          <p>{session.user.displayName}</p>
+          <small>{session.user.email}</small>
+        </div>
+
+        <nav className="nav">
+          {TAB_ITEMS.map((tab) => {
+            const active = activeTab === tab.id;
+            const count =
+              tab.kind && dashboard?.counts?.[tab.kind]
+                ? dashboard.counts[tab.kind]
+                : undefined;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                className={`nav-item ${active ? 'active' : ''}`}
+                onClick={() => openTab(tab.id)}
+              >
+                <span>{tab.label}</span>
+                {typeof count === 'number' ? <span className="nav-count">{count}</span> : null}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="sidebar-footer">
+          <button type="button" className="btn ghost" onClick={logout} disabled={busy}>
+            Déconnexion
+          </button>
+        </div>
+      </aside>
+
+      <main className="main">
+        <header className="topbar panel">
+          <div>
+            <p className="eyebrow">Poste de commandement</p>
+            <h2>{tabTitle(activeTab)}</h2>
+            <p className="subtitle">
+              {busy
+                ? 'Synchronisation en cours…'
+                : 'Toujours avec plusieurs coups d’avance, sans bloquer si une donnée manque.'}
+            </p>
+          </div>
+          <div className="topbar-actions">
+            <span className="badge neutral">{session.role}</span>
+            <span className="badge info">{dashboard?.stats.total ?? 0} éléments</span>
+          </div>
+        </header>
+
+        <div className="content">
+          {banner ? <Banner kind={banner.kind} text={banner.text} /> : null}
+
+          {activeTab === 'dashboard' ? (
+            <DashboardPanel
+              dashboard={dashboard}
+              onOpenTab={openTab}
+              onOpenItem={openEntityForItem}
+            />
+          ) : ENTITY_KINDS.includes(activeTab as EntityKind) ? (
+            <EntityPanel
+              kind={currentEntityKind}
+              items={filteredItems}
+              search={search}
+              onSearchChange={setSearch}
+              form={itemForm}
+              onFormChange={updateItemField}
+              onSave={saveItem}
+              onReset={() => resetItemForm(currentEntityKind)}
+              onEdit={openEntityForItem}
+              onDelete={deleteItem}
+              editingId={editingItemId}
+              busy={busy}
+              previewScore={itemPreviewScore}
+            />
+          ) : activeTab === 'history' ? (
+            <HistoryPanel history={history} />
+          ) : activeTab === 'ia' ? (
+            <AnalysisPanel
+              form={analysisForm}
+              onFormChange={updateAnalysisField}
+              onSubmit={runAnalysis}
+              result={analysisResult}
+              previewScore={analysisPreviewScore}
+              honorifics={settings.ai.honorifics}
+            />
+          ) : (
+            <SettingsPanel
+              settings={settings}
+              onWeightChange={setSettingsWeight}
+              onUiChange={setSettingsUi}
+              onAiChange={setSettingsAi}
+              onSave={saveSettings}
+              busy={busy}
+            />
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function AuthGate({
+  boot,
+  form,
+  onFieldChange,
+  onSubmit,
+  busy,
+  banner
+}: {
+  boot: BootstrapStatus | null;
+  form: AuthFormState;
+  onFieldChange: (field: string, value: string) => void;
+  onSubmit: (event: React.FormEvent) => void;
+  busy: boolean;
+  banner: { kind: 'success' | 'error' | 'info'; text: string } | null;
+}) {
+  const needsBootstrap = boot?.needsBootstrap ?? false;
+
+  return (
+    <div className="auth-shell">
+      <div className="panel auth-card">
+        <div className="auth-hero">
+          <p className="eyebrow">Azhell Zettour</p>
+          <h1>État-Major Personnel</h1>
+          <p>
+            Cockpit mobile d’aide à la décision. Accès préalable obligatoire, puis login protégé.
+          </p>
+          <div className="chips">
+            <span className="badge info">
+              {needsBootstrap ? 'Initialisation requise' : 'Accès préalable + login'}
+            </span>
+            <span className="badge neutral">PWA</span>
+            <span className="badge neutral">Cloudflare Workers</span>
+          </div>
+        </div>
+
+        {banner ? <Banner kind={banner.kind} text={banner.text} /> : null}
+
+        <form className="auth-form" onSubmit={onSubmit}>
+          <Field label="Code d'accès préalable" hint="Obligatoire avant toute connexion.">
+            <input
+              className="input"
+              value={form.accessCode}
+              onChange={(e) => onFieldChange('accessCode', e.target.value)}
+              placeholder="Code d'accès"
+              type="password"
+              autoComplete="off"
+              required
+            />
+          </Field>
+
+          <Field label="E-mail">
+            <input
+              className="input"
+              value={form.email}
+              onChange={(e) => onFieldChange('email', e.target.value)}
+              placeholder="commandant@exemple.com"
+              type="email"
+              autoComplete="username"
+              required
+            />
+          </Field>
+
+          <Field label="Mot de passe">
+            <input
+              className="input"
+              value={form.password}
+              onChange={(e) => onFieldChange('password', e.target.value)}
+              placeholder="Mot de passe"
+              type="password"
+              autoComplete={needsBootstrap ? 'new-password' : 'current-password'}
+              required
+            />
+          </Field>
+
+          {needsBootstrap ? (
+            <>
+              <Field label="Nom du workspace">
+                <input
+                  className="input"
+                  value={form.workspaceName}
+                  onChange={(e) => onFieldChange('workspaceName', e.target.value)}
+                  placeholder="Quartier général"
+                  type="text"
+                  required
+                />
+              </Field>
+
+              <Field label="Nom affiché">
+                <input
+                  className="input"
+                  value={form.displayName}
+                  onChange={(e) => onFieldChange('displayName', e.target.value)}
+                  placeholder="Commandant"
+                  type="text"
+                  required
+                />
+              </Field>
+            </>
+          ) : null}
+
+          <button className="btn primary" type="submit" disabled={busy}>
+            {busy ? 'Traitement…' : needsBootstrap ? 'Créer le poste initial' : 'Entrer au poste'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
