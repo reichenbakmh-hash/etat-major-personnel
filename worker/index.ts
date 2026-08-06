@@ -698,6 +698,74 @@ async function analyzeDecision(request: Request, env: Env, session: SessionData)
   if (input.time >= 70) riskNotes.push('Pression temporelle élevée');
   if (!context) riskNotes.push('Contexte insuffisant');
 
-  const opportunityNotes: string[] = [];
-  if (input.impact >= 65) opportunityNotes.push('Impact stratégique fort');
-  if (input.flexibility >= 60) opportunityNotes.push('Flexib
+  function buildDoctrines(
+  input: {
+    risk: number;
+    feasibility: number;
+    dependencies: number;
+    flexibility: number;
+    resilience: number;
+    time: number;
+  },
+  missingData: string[]
+) {
+  const notes: DoctrineNote[] = [];
+
+  if (input.risk >= 60) {
+    notes.push({
+      doctrine: 'Sun Tzu',
+      note: 'Éviter la bataille inutile. Préférer la manœuvre, la désescalade ou l’isolement des points de friction.'
+    });
+  }
+
+  if (input.dependencies >= 50) {
+    notes.push({
+      doctrine: 'Clausewitz',
+      note: 'Attention à la friction. Chaque dépendance externe augmente l’incertitude réelle du plan.'
+    });
+  }
+
+  if (input.feasibility >= 60 && input.risk < 55) {
+    notes.push({
+      doctrine: 'Napoléon',
+      note: 'Concentrer les forces sur le point décisif pour obtenir un effet supérieur à l’effort.'
+    });
+  }
+
+  if (input.time >= 60 && input.feasibility >= 50) {
+    notes.push({
+      doctrine: 'César',
+      note: 'La vitesse peut compenser une partie des faiblesses si l’exécution reste nette et contrôlée.'
+    });
+  }
+
+  if (input.flexibility >= 60) {
+    notes.push({
+      doctrine: 'Rommel',
+      note: 'La mobilité et l’adaptation rapide offrent un avantage si la ligne d’action reste légère.'
+    });
+  }
+
+  if (input.resilience >= 60) {
+    notes.push({
+      doctrine: 'Gracián',
+      note: 'La prudence renforce la position. Préserver les options avant de chercher l’éclat.'
+    });
+  }
+
+  if (missingData.length > 0) {
+    notes.push({
+      doctrine: 'Le Bon',
+      note: 'Les perceptions changent vite quand l’information est incomplète. Rester attentif aux réactions collectives.'
+    });
+  }
+
+  return notes.length
+    ? notes
+    : [
+        {
+          doctrine: 'Machiavel',
+          note: 'Lecture froide : conserver l’avantage, réduire les angles morts et protéger l’intérêt principal.'
+        }
+      ];
+  }
