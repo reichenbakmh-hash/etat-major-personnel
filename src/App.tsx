@@ -1028,5 +1028,4 @@ function AuthGate({
     </div>
   );
 }
-
-          export default App;
+       export default App;
