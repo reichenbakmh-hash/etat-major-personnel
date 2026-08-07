@@ -16,7 +16,10 @@
     "database_name": "etat-major-personnel",
     "database_id": "098174d8-2e85-4e1f-a81a-bf3ba1c35dd7"
     }
-  ],
+],
+  "ai": {
+    "binding": "AI"
+  },
   "vars": {
     "APP_NAME": "État-Major Personnel"
   }
