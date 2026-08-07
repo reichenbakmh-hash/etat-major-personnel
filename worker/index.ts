@@ -791,6 +791,15 @@ async function analyzeDecision(request: Request, env: Env, session: SessionData)
           }
         ];
   }
+  if (pathname === "/api/ai/analyze" && request.method === "POST") {
+  const body = await request.json();
+
+  const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+    prompt: `Tu es Azhell Zettour. Analyse cette situation : ${JSON.stringify(body)}`
+  });
+
+  return Response.json(result);
+  }
 
   const doctrines = buildDoctrines(input, missingData);
 
