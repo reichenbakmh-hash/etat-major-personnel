@@ -1,5 +1,3 @@
-import { webcrypto } from 'node:crypto';
-
 interface Item {
   id: string;
   title: string;
@@ -176,7 +174,7 @@ export async function verifyPassword(password: string, salt: string, hash: strin
 async function hashPassword(password: string, salt: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + salt);
-  const hashBuffer = await webcrypto.subtle.digest('SHA-256', data);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   return bytesToHex(new Uint8Array(hashBuffer));
 }
 
